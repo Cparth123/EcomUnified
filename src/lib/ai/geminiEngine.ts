@@ -2,7 +2,7 @@ import { MasterProductInput, MasterProfitAnalysisReport, CompetitorListingMatch 
 import { runMasterProfitAnalysis } from './masterProfitEngine';
 import { formatINR } from '@/lib/utils';
 
-export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyAOqXz9MK4CSoBpDMq5ldL8TzN6GJ9nyIA';
+export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
 
 export interface GeminiExtractedData {
   productName: string;
