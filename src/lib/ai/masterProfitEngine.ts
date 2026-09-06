@@ -652,6 +652,8 @@ FINAL DECISION: ${finalDecision}
     productOpportunityRating: opportunityRating,
     finalBusinessDecision: finalDecision,
     executiveSummaryText: `The product "${productName}" priced at ₹${buyingPrice} buying cost yields an estimated landed cost of ₹${totalLandedCost}. Sourced at scale and listed at ₹${bestBalancedSellingPrice}, it generates ₹${profitPerUnit} net profit per unit (${bestMargin}% net margin). 6-month demand trajectory is ${marketDemand6M.trajectory}. Commercial verdict is ${finalDecision}.`,
+    customPromptApplied: input.customPrompt,
+    promptModeApplied: input.promptMode || 'prompt1_master',
     mandatoryClosingSummaryBlock: closingBlock,
   };
 }

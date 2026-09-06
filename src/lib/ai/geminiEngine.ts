@@ -681,6 +681,10 @@ Return ONLY a valid JSON block with this structure:
     masterReport.customPromptEvaluation = geminiCustomPromptEvaluation || generateDeterministicCustomPromptReport(enrichedInput, masterReport);
   }
 
+  if (enrichedInput.promptMode) {
+    masterReport.promptModeApplied = enrichedInput.promptMode;
+  }
+
   if (geminiInsightsText) {
     masterReport.executiveSummaryText = `${geminiInsightsText}\n\n${masterReport.executiveSummaryText}`;
   }

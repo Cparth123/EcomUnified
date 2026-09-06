@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
       inboundFreightPerUnit,
       packagingCostPerUnit,
       supplierLocation,
-      customPrompt
+      customPrompt,
+      promptMode,
     } = body;
 
     const cost = Number(buyingPrice || proposedCostPrice || 0);
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
       supplierLocation,
       imageUrl,
       customPrompt: customPrompt ? String(customPrompt).trim() : undefined,
+      promptMode,
     }, imageUrl);
 
     const finalProductName = masterReport.productInfo.productName;

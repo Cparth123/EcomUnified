@@ -20,6 +20,7 @@ export interface MasterProductInput {
   imageUrl?: string;
   screenshotUrl?: string;
   customPrompt?: string; // Optional user custom prompt / focus directive
+  promptMode?: 'prompt1_master' | 'prompt2_volume_matrix' | 'custom_prompt';
 }
 
 export interface ReturnPolicyClassification {
@@ -383,6 +384,7 @@ export interface MasterProfitAnalysisReport {
   executiveSummaryText: string;
   customPromptApplied?: string;
   customPromptEvaluation?: string;
+  promptModeApplied?: 'prompt1_master' | 'prompt2_volume_matrix' | 'custom_prompt' | string;
 
   // 23. Mandatory Concise Decision Summary String
   mandatoryClosingSummaryBlock: string;
