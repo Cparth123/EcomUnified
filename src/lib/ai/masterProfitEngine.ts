@@ -13,6 +13,7 @@ import {
 } from '@/types/masterAnalysis';
 import { calculateAmazonFees, AMAZON_CATEGORIES } from '../calculators/amazonFeeEngine';
 import { calculateFlipkartFees, FLIPKART_CATEGORIES } from '../calculators/flipkartFeeEngine';
+import { getCategoryHsnDetails } from './geminiEngine';
 
 export function runMasterProfitAnalysis(input: MasterProductInput): MasterProfitAnalysisReport {
   const {
@@ -455,6 +456,9 @@ RETURN RISK: ${riskLevel}
 FINAL DECISION: ${finalDecision}
 `.trim();
 
+  const hsnInfo = getCategoryHsnDetails(category, productName);
+  const effectiveGstRate = gstRatePercent || hsnInfo.gstRate || 18;
+
   return {
     id: `ANL-MSTR-${Date.now().toString().slice(-6)}`,
     generatedAt: new Date().toISOString(),
@@ -463,7 +467,10 @@ FINAL DECISION: ${finalDecision}
       brandModel,
       skuCode,
       category,
-      subCategory,
+      subCategory: hsnInfo.categoryLabel,
+      hsnCode: hsnInfo.hsnCode,
+      gstRatePercent: effectiveGstRate,
+      recommendedMarketplaceCategory: hsnInfo.marketplaceListingNode,
       supplierName,
       supplierLocation,
       buyingPrice,
@@ -478,9 +485,9 @@ FINAL DECISION: ${finalDecision}
         `Dimensions: ${dimensions.length} x ${dimensions.width} x ${dimensions.height} cm`,
         `Material: ${material}`,
         `Pack Configuration: ${packType}`,
-        `GST Applicability: ${gstRatePercent}% HSN Registered`
+        `GST Applicability: ${effectiveGstRate}% (${hsnInfo.hsnCode}) Registered`
       ],
-      gstHsnDetails: `HSN Code Category • ${gstRatePercent}% GST`,
+      gstHsnDetails: hsnInfo.gstHsnSummary,
       costPerSellableUnit: buyingPrice,
     },
     returnPolicyClassification: {
