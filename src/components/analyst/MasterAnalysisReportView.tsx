@@ -35,7 +35,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { MasterProfitAnalysisReport } from '@/types/masterAnalysis';
-import { ProductListing } from '@/types/product';
+import { ProductListing } from '@/types';
 import globalStore from '@/lib/store';
 import { formatINR } from '@/lib/utils';
 import { PlatformBadge } from '@/components/ui/Badge';
