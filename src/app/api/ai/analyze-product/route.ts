@@ -3,6 +3,9 @@ import { analyzeWithGemini, GEMINI_API_KEY } from '@/lib/ai/geminiEngine';
 import { analyzeNewProduct } from '@/lib/ai/productResearchEngine';
 import globalStore from '@/lib/store';
 
+export const dynamic = 'force-dynamic';
+export const maxDuration = 45;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
