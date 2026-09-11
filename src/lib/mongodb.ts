@@ -19,19 +19,19 @@ if (!cached) {
 }
 
 export async function connectToDatabase(): Promise<{ isConnected: boolean; error?: string }> {
-  // If not in live data mode, don't force a strict connection
-  if (!IS_LIVE_DATA) {
-    return { isConnected: false, error: 'LIVE_DATA is set to false (Dummy data active)' };
+  if (!MONGODB_URI) {
+    return { isConnected: false, error: 'MONGODB_URI is not defined' };
   }
 
-  if (cached!.conn) {
+  if (cached!.conn && mongoose.connection.readyState === 1) {
     return { isConnected: true };
   }
 
   if (!cached!.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 4000,
+      serverSelectionTimeoutMS: 3000,
+      connectTimeoutMS: 3000,
     };
 
     cached!.promise = mongoose.connect(MONGODB_URI, opts).then((m) => m);

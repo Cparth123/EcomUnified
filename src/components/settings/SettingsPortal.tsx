@@ -14,7 +14,8 @@ import {
   FileCheck2,
   XCircle,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  UploadCloud
 } from 'lucide-react';
 import globalStore from '@/lib/store';
 import { PlatformBadge } from '@/components/ui/Badge';
@@ -38,6 +39,11 @@ export const SettingsPortal: React.FC = () => {
   const [flipkartAppId, setFlipkartAppId] = useState(credentials.flipkart?.appId || '');
   const [flipkartAppSecret, setFlipkartAppSecret] = useState(credentials.flipkart?.appSecret || '');
   const [flipkartWebhookUrl, setFlipkartWebhookUrl] = useState('');
+
+  // Cloudinary media store
+  const [cloudinaryCloudName, setCloudinaryCloudName] = useState('demo');
+  const [cloudinaryApiKey, setCloudinaryApiKey] = useState('');
+  const [cloudinaryApiSecret, setCloudinaryApiSecret] = useState('');
 
   const [aiProvider, setAiProvider] = useState<'heuristic' | 'claude' | 'openai'>('heuristic');
   const [anthropicKey, setAnthropicKey] = useState('');
@@ -420,6 +426,61 @@ export const SettingsPortal: React.FC = () => {
                   value={flipkartWebhookUrl}
                   onChange={(e) => setFlipkartWebhookUrl(e.target.value)}
                   className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-[#2874F0] focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Cloudinary Media Store Section */}
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-6 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold">
+                  <UploadCloud className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">Cloudinary Media Store</h3>
+                  <p className="text-xs text-slate-500">Image hosting and CDN optimization for product catalog uploads</p>
+                </div>
+              </div>
+
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Cloudinary Ready</span>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-slate-300">Cloud Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. my-ecom-cloud"
+                  value={cloudinaryCloudName}
+                  onChange={(e) => setCloudinaryCloudName(e.target.value)}
+                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-sky-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-slate-300">API Key</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 123456789012345"
+                  value={cloudinaryApiKey}
+                  onChange={(e) => setCloudinaryApiKey(e.target.value)}
+                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-sky-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-slate-300">API Secret</label>
+                <input
+                  type="password"
+                  placeholder="e.g. abcd1234efgh5678"
+                  value={cloudinaryApiSecret}
+                  onChange={(e) => setCloudinaryApiSecret(e.target.value)}
+                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-sky-500 focus:outline-none transition-colors"
                 />
               </div>
             </div>

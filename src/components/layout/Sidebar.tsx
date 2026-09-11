@@ -13,7 +13,8 @@ import {
   ChevronRight,
   ShieldCheck,
   AlertCircle,
-  KeyRound
+  KeyRound,
+  Layers
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import globalStore from '@/lib/store';
@@ -32,6 +33,13 @@ const navItems: NavItem[] = [
     name: 'Dashboard',
     href: '/',
     icon: LayoutDashboard,
+  },
+  {
+    name: 'Product Catalog',
+    href: '/products',
+    icon: Layers,
+    badge: 'Media Store',
+    badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30',
   },
   {
     name: 'Amazon Portal',

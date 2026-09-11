@@ -15,11 +15,13 @@ import {
 import { ProductListing } from '@/types';
 import globalStore from '@/lib/store';
 import { Modal } from '@/components/ui/Modal';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import { formatINR } from '@/lib/utils';
 import { AMAZON_CATEGORIES, calculateAmazonFees } from '@/lib/calculators/amazonFeeEngine';
 
 export const AmazonProductsTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchMode, setSearchMode] = useState<'all' | 'name' | 'sku' | 'asin'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -37,13 +39,22 @@ export const AmazonProductsTable: React.FC = () => {
   const products = useMemo(() => {
     const all = globalStore.getProducts('amazon');
     if (!searchTerm.trim()) return all;
-    const q = searchTerm.toLowerCase();
+    const q = searchTerm.toLowerCase().trim();
+    if (searchMode === 'sku') {
+      return all.filter(p => p.sku && p.sku.toLowerCase().includes(q));
+    }
+    if (searchMode === 'asin') {
+      return all.filter(p => p.asin && p.asin.toLowerCase().includes(q));
+    }
+    if (searchMode === 'name') {
+      return all.filter(p => p.name && p.name.toLowerCase().includes(q));
+    }
     return all.filter(p => 
-      p.name.toLowerCase().includes(q) || 
-      p.sku.toLowerCase().includes(q) || 
+      (p.name && p.name.toLowerCase().includes(q)) || 
+      (p.sku && p.sku.toLowerCase().includes(q)) || 
       (p.asin && p.asin.toLowerCase().includes(q))
     );
-  }, [searchTerm, notification]);
+  }, [searchTerm, searchMode, notification]);
 
   const handleCreateProduct = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,15 +131,47 @@ export const AmazonProductsTable: React.FC = () => {
 
       {/* Search and Table */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-4 sm:p-5 shadow-sm space-y-4">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search ASIN, SKU, Product Title..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-9 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 pl-9 pr-3 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-[#FF9900] focus:outline-none"
-          />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-1 max-w-md">
+            <select
+              value={searchMode}
+              onChange={(e) => setSearchMode(e.target.value as any)}
+              className="h-9 px-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 focus:border-[#FF9900] focus:outline-none cursor-pointer"
+            >
+              <option value="all">All Fields</option>
+              <option value="name">Title / Name</option>
+              <option value="sku">SKU Code</option>
+              <option value="asin">Amazon ASIN</option>
+            </select>
+
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder={
+                  searchMode === 'asin' ? 'Search by ASIN (e.g. B09G9F...)...' :
+                  searchMode === 'sku' ? 'Search by SKU...' :
+                  searchMode === 'name' ? 'Search by Product Title...' :
+                  'Search ASIN, SKU, Product Title...'
+                }
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full h-9 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 pl-9 pr-8 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-[#FF9900] focus:outline-none"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 hover:text-slate-600"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="text-xs text-slate-500 font-medium">
+            Showing <strong className="text-slate-800 dark:text-slate-200">{products.length}</strong> Amazon listings
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
@@ -274,30 +317,25 @@ export const AmazonProductsTable: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Category</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full h-9 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3 text-slate-900 dark:text-white focus:border-[#FF9900] focus:outline-none"
-                >
-                  {Object.entries(AMAZON_CATEGORIES).map(([k, v]) => (
-                    <option key={k} value={k}>{v.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Image URL</label>
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full h-9 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3 text-slate-900 dark:text-white focus:border-[#FF9900] focus:outline-none"
-                />
-              </div>
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 dark:text-slate-300">Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full h-9 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3 text-slate-900 dark:text-white focus:border-[#FF9900] focus:outline-none"
+              >
+                {Object.entries(AMAZON_CATEGORIES).map(([k, v]) => (
+                  <option key={k} value={k}>{v.name}</option>
+                ))}
+              </select>
             </div>
+
+            <ImageUpload
+              value={imageUrl}
+              onChange={(url) => setImageUrl(url)}
+              label="Amazon Product Image (Cloudinary)"
+              helperText="Upload image for Amazon listing. Stored and optimized via Cloudinary CDN."
+            />
 
             <div className="grid grid-cols-4 gap-3">
               <div className="space-y-1">
