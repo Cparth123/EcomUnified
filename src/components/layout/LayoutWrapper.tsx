@@ -10,8 +10,12 @@ export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // If user is on login or signup pages, render full screen without sidebar/navbar
-  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  // If user is on auth pages, render full screen without sidebar/navbar
+  const isAuthPage = 
+    pathname === '/login' || 
+    pathname === '/signup' || 
+    pathname === '/forgot-password' || 
+    pathname === '/reset-password';
 
   if (isAuthPage) {
     return (

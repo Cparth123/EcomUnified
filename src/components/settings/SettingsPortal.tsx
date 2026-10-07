@@ -45,6 +45,14 @@ export const SettingsPortal: React.FC = () => {
   const [cloudinaryApiKey, setCloudinaryApiKey] = useState('');
   const [cloudinaryApiSecret, setCloudinaryApiSecret] = useState('');
 
+  // Google OAuth 2.0 & Gemini AI Engine Keys
+  const [googleClientId, setGoogleClientId] = useState('');
+  const [googleClientSecret, setGoogleClientSecret] = useState('');
+  const [googleGeminiKey, setGoogleGeminiKey] = useState('AIzaSyAOqXz9MK4CSoBpDMq5ldL8TzN6GJ9nyIA');
+  const [isTestingGoogle, setIsTestingGoogle] = useState(false);
+  const [googleTestResult, setGoogleTestResult] = useState<any | null>(null);
+  const [copiedText, setCopiedText] = useState<string | null>(null);
+
   const [aiProvider, setAiProvider] = useState<'heuristic' | 'claude' | 'openai'>('heuristic');
   const [anthropicKey, setAnthropicKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
@@ -59,6 +67,39 @@ export const SettingsPortal: React.FC = () => {
   // Policy Audit Results
   const [amzAuditResult, setAmzAuditResult] = useState<PlatformPolicyAuditResult | null>(null);
   const [fkAuditResult, setFkAuditResult] = useState<PlatformPolicyAuditResult | null>(null);
+
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedText(label);
+    setTimeout(() => setCopiedText(null), 2500);
+  };
+
+  const handleTestGoogle = async () => {
+    setIsTestingGoogle(true);
+    setGoogleTestResult(null);
+
+    try {
+      const res = await fetch('/api/auth/google/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: googleClientId,
+          clientSecret: googleClientSecret,
+          geminiApiKey: googleGeminiKey,
+        }),
+      });
+
+      const data = await res.json();
+      setGoogleTestResult(data.diagnostics);
+    } catch (err: any) {
+      setGoogleTestResult({
+        googleOAuth: { status: 'missing', message: err.message || 'Failed to run Google diagnostics' },
+        googleGeminiAI: { status: 'not_configured', message: 'Diagnostic request error' },
+      });
+    } finally {
+      setIsTestingGoogle(false);
+    }
+  };
 
   // Load from MongoDB if available
   useEffect(() => {
@@ -427,6 +468,158 @@ export const SettingsPortal: React.FC = () => {
                   onChange={(e) => setFlipkartWebhookUrl(e.target.value)}
                   className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-[#2874F0] focus:outline-none transition-colors"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* GOOGLE CLOUD OAUTH & GEMINI AI INTEGRATION CARD */}
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-5 sm:p-6 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 flex-wrap gap-2">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">Google Cloud & Gemini AI Integrations</h3>
+                  <p className="text-xs text-slate-500">Google OAuth 2.0 Seller Sign-In & Gemini 1.5/2.0 AI Product Intelligence</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleTestGoogle}
+                  disabled={isTestingGoogle}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 hover:bg-blue-100 dark:hover:bg-blue-500/25 text-blue-700 dark:text-blue-400 text-xs font-bold border border-blue-200 dark:border-blue-500/30 transition-colors shadow-sm"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${isTestingGoogle ? 'animate-spin' : ''}`} />
+                  <span>{isTestingGoogle ? 'Testing Keys...' : 'Test Google Keys'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Test Diagnostic Result Banner */}
+            {googleTestResult && (
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                  <span>Google Connection Diagnostic Results</span>
+                  <span className="text-[10px] text-slate-500">Live Test</span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+                    <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${googleTestResult.googleOAuth?.status === 'configured' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                      <span>Google OAuth 2.0 Sign-In</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">{googleTestResult.googleOAuth?.message}</p>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+                    <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${googleTestResult.googleGeminiAI?.status === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                      <span>Google Gemini AI Engine</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">{googleTestResult.googleGeminiAI?.message}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-slate-300">Google OAuth Client ID</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 123456789-xxxx.apps.googleusercontent.com"
+                  value={googleClientId}
+                  onChange={(e) => setGoogleClientId(e.target.value)}
+                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-blue-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-slate-300">Google OAuth Client Secret</label>
+                <input
+                  type="password"
+                  placeholder="e.g. GOCSPX-xxxxxxxxxxxx"
+                  value={googleClientSecret}
+                  onChange={(e) => setGoogleClientSecret(e.target.value)}
+                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-blue-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Google Gemini AI API Key (Gemini 1.5 / 2.0)</label>
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                  >
+                    <span>Get Gemini API Key (Free)</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+                <input
+                  type="password"
+                  placeholder="AIzaSyAOqXz9..."
+                  value={googleGeminiKey}
+                  onChange={(e) => setGoogleGeminiKey(e.target.value)}
+                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-blue-500 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Google Cloud Console Setup Guidance & 1-Click Copy */}
+            <div className="p-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 text-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-blue-950 dark:text-blue-200">Google Cloud Console Configuration URLs</span>
+                <a
+                  href="https://console.cloud.google.com/apis/credentials"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                >
+                  <span>Open Google Cloud Credentials</span>
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/60 space-y-1">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Authorized JavaScript Origins</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <code className="text-blue-700 dark:text-blue-300 font-mono text-[11px] truncate">http://localhost:3000</code>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy('http://localhost:3000', 'origin')}
+                      className="text-[10px] font-bold px-2 py-1 rounded bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 hover:opacity-80 transition-opacity shrink-0"
+                    >
+                      {copiedText === 'origin' ? 'Copied ✓' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/60 space-y-1">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Authorized Redirect URI</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <code className="text-blue-700 dark:text-blue-300 font-mono text-[11px] truncate">http://localhost:3000/api/auth/callback/google</code>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy('http://localhost:3000/api/auth/callback/google', 'redirect')}
+                      className="text-[10px] font-bold px-2 py-1 rounded bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 hover:opacity-80 transition-opacity shrink-0"
+                    >
+                      {copiedText === 'redirect' ? 'Copied ✓' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

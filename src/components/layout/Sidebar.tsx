@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Sparkles, 
@@ -10,11 +10,14 @@ import {
   TrendingUp, 
   Package, 
   ShoppingBag, 
-  ChevronRight,
-  ShieldCheck,
-  AlertCircle,
-  KeyRound,
-  Layers
+  ChevronRight, 
+  ShieldCheck, 
+  AlertCircle, 
+  KeyRound, 
+  Layers,
+  Calculator,
+  LogOut,
+  User as UserIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import globalStore from '@/lib/store';
@@ -25,7 +28,7 @@ interface NavItem {
   icon: React.ElementType;
   badge?: string;
   badgeColor?: string;
-  channel?: 'amazon' | 'flipkart' | 'ai';
+  channel?: 'amazon' | 'flipkart' | 'ai' | 'telegram' | 'orders';
 }
 
 const navItems: NavItem[] = [
@@ -35,33 +38,59 @@ const navItems: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    name: 'Product Catalog',
-    href: '/products',
-    icon: Layers,
-    badge: 'Media Store',
-    badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30',
+    name: 'Accounting & Calc',
+    href: '/accounting',
+    icon: Calculator,
+    badge: 'XLSX',
+    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30',
   },
   {
-    name: 'Amazon Portal',
-    href: '/amazon',
+    name: 'Wholesale Sourcing',
+    href: '/search',
+    icon: Sparkles,
+    badge: 'Telegram',
+    badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30',
+    channel: 'ai',
+  },
+  {
+    name: 'Amazon Auto Orders',
+    href: '/orders',
     icon: Package,
-    badge: 'SP-API',
+    badge: 'Auto',
     badgeColor: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-[#FF9900]/20 dark:text-[#FF9900] dark:border-[#FF9900]/30',
     channel: 'amazon',
   },
   {
-    name: 'Flipkart Portal',
-    href: '/flipkart',
+    name: 'Supplier Channels',
+    href: '/suppliers',
+    icon: Layers,
+    badge: 'Import',
+    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30',
+    channel: 'telegram',
+  },
+  {
+    name: 'Amazon SP-API',
+    href: '/integrations/amazon',
+    icon: KeyRound,
+    badge: 'Connect',
+    badgeColor: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-[#FF9900]/20 dark:text-[#FF9900] dark:border-[#FF9900]/30',
+    channel: 'amazon',
+  },
+  {
+    name: 'Automation Rules',
+    href: '/settings/automation',
+    icon: ShieldCheck,
+  },
+  {
+    name: 'Product Catalog',
+    href: '/products',
     icon: ShoppingBag,
-    badge: 'Seller API',
-    badgeColor: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-[#2874F0]/20 dark:text-[#3b82f6] dark:border-[#2874F0]/30',
-    channel: 'flipkart',
   },
   {
     name: 'AI Product Analyst',
     href: '/analyst',
     icon: Sparkles,
-    badge: 'Gemini 1.5',
+    badge: 'Gemini',
     badgeColor: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30',
     channel: 'ai',
   },
@@ -79,17 +108,51 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const [credentials, setCredentials] = useState(globalStore.getCredentials());
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
 
   useEffect(() => {
-    // Refresh credentials status
     const updateCreds = () => {
       setCredentials(globalStore.getCredentials());
     };
     updateCreds();
+
+    // Check user session
+    const loadUser = async () => {
+      try {
+        const stored = localStorage.getItem('user_info');
+        if (stored) {
+          setCurrentUser(JSON.parse(stored));
+        }
+
+        const res = await fetch('/api/auth/me');
+        const json = await res.json();
+        if (json.authenticated && json.user) {
+          setCurrentUser(json.user);
+          localStorage.setItem('user_info', JSON.stringify(json.user));
+        }
+      } catch (e) {
+        console.warn('Could not fetch user session');
+      }
+    };
+    loadUser();
+
     window.addEventListener('storage', updateCreds);
     return () => window.removeEventListener('storage', updateCreds);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.warn('Logout error', e);
+    }
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_info');
+    setCurrentUser(null);
+    router.push('/login');
+  };
 
   const isAmazonConnected = Boolean(credentials.amazon?.isConnected || credentials.amazon?.clientId);
   const isFlipkartConnected = Boolean(credentials.flipkart?.isConnected || credentials.flipkart?.appId);
@@ -129,8 +192,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
         </div>
 
         {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1.5">
-          <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+        <div className="flex-1 overflow-y-auto px-3.5 py-5 space-y-1">
+          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Main Management
           </div>
 
@@ -144,16 +207,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
                 href={item.href}
                 onClick={onCloseMobile}
                 className={cn(
-                  'group relative flex items-center justify-between rounded-xl px-3.5 py-3 text-sm font-medium transition-all duration-200',
+                  'group relative flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-200',
                   isActive
-                    ? 'bg-indigo-50 dark:bg-gradient-to-r dark:from-blue-600/20 dark:to-indigo-600/10 text-indigo-700 dark:text-white border border-indigo-200 dark:border-blue-500/30 font-semibold shadow-sm'
+                    ? 'bg-indigo-50 dark:bg-gradient-to-r dark:from-blue-600/20 dark:to-indigo-600/10 text-indigo-700 dark:text-white border border-indigo-200 dark:border-blue-500/30 shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900/80 hover:text-slate-900 dark:hover:text-slate-200'
                 )}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div
                     className={cn(
-                      'flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
+                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
                       isActive
                         ? item.channel === 'amazon'
                           ? 'bg-amber-100 text-amber-700 dark:bg-[#FF9900]/20 dark:text-[#FF9900]'
@@ -165,28 +228,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
                         : 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'
                     )}
                   >
-                    <Icon className="h-5 w-5" />
+                    <Icon className="h-4 w-4" />
                   </div>
-                  <span className={cn(isActive && 'font-bold text-slate-900 dark:text-white')}>{item.name}</span>
+                  <span className={cn('whitespace-nowrap truncate', isActive && 'font-bold text-slate-900 dark:text-white')}>{item.name}</span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 shrink-0 pl-1.5">
                   {item.badge && (
                     <span
                       className={cn(
-                        'rounded-full px-2 py-0.5 text-[10px] font-bold border',
+                        'rounded-md px-1.5 py-0.5 text-[9px] font-bold border whitespace-nowrap shrink-0 tracking-tight',
                         item.badgeColor
                       )}
                     >
                       {item.badge}
                     </span>
                   )}
-                  {isActive && <ChevronRight className="h-4 w-4 text-indigo-600 dark:text-blue-400" />}
+                  {isActive && <ChevronRight className="h-3.5 w-3.5 text-indigo-600 dark:text-blue-400 shrink-0" />}
                 </div>
 
                 {/* Active side indicator */}
                 {isActive && (
-                  <div className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-indigo-600 dark:bg-blue-500 shadow-[0_0_8px_rgba(79,70,229,0.6)]" />
+                  <div className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-indigo-600 dark:bg-blue-500 shadow-[0_0_8px_rgba(79,70,229,0.6)]" />
                 )}
               </Link>
             );
@@ -238,11 +301,53 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
                 </span>
               </Link>
             </div>
-          </div>
 
-          <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1 font-medium">
-            <span>Unified Store v1.2</span>
-            <span>Currency: INR (₹)</span>
+            {/* Authenticated User Profile & Logout Action */}
+            <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+              {currentUser ? (
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {currentUser.avatar ? (
+                      <img
+                        src={currentUser.avatar}
+                        alt={currentUser.name}
+                        className="w-8 h-8 rounded-full border border-slate-300 dark:border-slate-700 shrink-0 bg-slate-100 dark:bg-slate-800"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                        {currentUser.name?.charAt(0)?.toUpperCase() || 'S'}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {currentUser.name}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                        {currentUser.storeName || 'Seller Portal'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleLogout}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors shrink-0"
+                    title="Log out of account"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-[11px] text-slate-500">Guest Session</span>
+                  <Link
+                    href="/login"
+                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </aside>

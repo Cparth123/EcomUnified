@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_ecom_jwt_key_2026_secured';
@@ -10,6 +11,8 @@ export interface AuthUserPayload {
   name: string;
   storeName: string;
   role: string;
+  avatar?: string;
+  googleId?: string;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -31,6 +34,12 @@ export function verifyToken(token: string): AuthUserPayload | null {
   } catch (error) {
     return null;
   }
+}
+
+export function generateResetToken(): { token: string; expires: Date } {
+  const token = crypto.randomBytes(32).toString('hex');
+  const expires = new Date(Date.now() + 3600000); // 1 hour validity
+  return { token, expires };
 }
 
 export function getAuthUser(req: NextRequest): AuthUserPayload | null {

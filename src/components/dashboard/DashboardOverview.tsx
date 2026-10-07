@@ -18,7 +18,8 @@ import {
   Download,
   KeyRound,
   ShieldCheck,
-  PackagePlus
+  PackagePlus,
+  Package
 } from 'lucide-react';
 import globalStore from '@/lib/store';
 import { PlatformType } from '@/types';
@@ -136,41 +137,39 @@ export const DashboardOverview: React.FC = () => {
         </div>
       </div>
 
-      {/* Onboarding / Connection Notice if channels are not connected */}
-      {!hasAnyChannelConnected && (
-        <div className="rounded-2xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50/70 dark:bg-indigo-950/20 p-5 sm:p-6 backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-start gap-3.5">
-            <div className="p-2.5 rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-500/20">
-              <KeyRound className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                Connect Your Official Seller Channels
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 max-w-xl">
-                Default dummy data has been removed. Add your official Amazon SP-API and Flipkart Seller API credentials in Settings to sync live orders, returns, and inventory.
-              </p>
-            </div>
+      {/* Telegram Wholesale Sourcing Quick Banner */}
+      <div className="rounded-3xl border border-indigo-200 dark:border-indigo-500/30 bg-gradient-to-r from-indigo-900 via-blue-900 to-slate-900 p-6 text-white shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="space-y-2 max-w-2xl">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-0.5 text-xs font-bold text-indigo-200">
+            <Sparkles className="h-3.5 w-3.5 text-indigo-300" />
+            <span>AI Wholesale Sourcing & Margin Arbitrage</span>
           </div>
-
-          <div className="flex items-center gap-2.5 flex-shrink-0 w-full sm:w-auto">
-            <Link
-              href="/settings"
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-500/20"
-            >
-              <span>Configure API Keys</span>
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
-            <Link
-              href="/analyst"
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-              <span>AI Analyst</span>
-            </Link>
-          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-white">
+            Find Surat & Delhi Wholesale Suppliers for Amazon Products
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Scan Telegram wholesale channels using Gemini AI vision. Compare unit prices (₹35/pc wholesale vs ₹299 retail) with live stock verification.
+          </p>
         </div>
-      )}
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/search"
+            className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-xs font-black text-slate-900 shadow-lg hover:bg-slate-100 transition-all active:scale-95"
+          >
+            <Sparkles className="h-4 w-4 text-indigo-600" />
+            <span>Find Cheapest Supplier</span>
+          </Link>
+
+          <Link
+            href="/orders"
+            className="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-3 text-xs font-bold text-white transition-colors"
+          >
+            <Package className="h-4 w-4 text-amber-400" />
+            <span>Auto Orders Pipeline</span>
+          </Link>
+        </div>
+      </div>
 
       {/* Financial Core Cards Grid */}
       <div>

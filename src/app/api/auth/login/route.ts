@@ -11,13 +11,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
     const dbStatus = await connectToDatabase();
     let userPayload;
 
     if (dbStatus.isConnected) {
-      const user = await User.findOne({ email: email.toLowerCase() });
+      const user = await User.findOne({ email: normalizedEmail });
       if (!user) {
         return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+      }
+
+      if (!user.passwordHash) {
+        return NextResponse.json(
+          { error: 'This account was registered with Google. Please use Google Login.' },
+          { status: 400 }
+        );
       }
 
       const isMatch = await comparePassword(password, user.passwordHash);
@@ -29,17 +37,19 @@ export async function POST(req: NextRequest) {
         userId: user._id.toString(),
         email: user.email,
         name: user.name,
-        storeName: user.storeName,
-        role: user.role,
+        storeName: user.storeName || `${user.name}'s Store`,
+        role: user.role || 'seller',
+        avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.email)}`,
       };
     } else {
-      // Demo / Fallback mode
+      // Demo fallback
       userPayload = {
-        userId: 'demo-user-1',
-        email: email.toLowerCase(),
-        name: email.split('@')[0].toUpperCase(),
+        userId: 'demo-seller-101',
+        email: normalizedEmail,
+        name: normalizedEmail.split('@')[0].toUpperCase(),
         storeName: 'OmniTrade India Solutions',
         role: 'seller',
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(normalizedEmail)}`,
       };
     }
 
@@ -58,10 +68,15 @@ export async function POST(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60 * 24 * 7,
       path: '/',
+      sameSite: 'lax',
     });
 
     return response;
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Login failed' }, { status: 500 });
+    console.error('Login error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error during login' },
+      { status: 500 }
+    );
   }
 }

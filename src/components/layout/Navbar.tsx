@@ -147,16 +147,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-600" />}
           </button>
 
-          {/* Sync Button */}
-          <button
-            onClick={handleGlobalSync}
-            disabled={isSyncing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700 transition-all active:scale-95 disabled:opacity-50"
-            title="Sync all channels"
+          {/* Notifications Bell */}
+          <Link
+            href="/notifications"
+            className="relative p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all shadow-sm"
+            title="Notifications & Supplier Matches"
           >
-            <RefreshCw className={`h-3.5 w-3.5 text-indigo-600 dark:text-blue-400 ${isSyncing ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Sync</span>
-          </button>
+            <Bell className="h-4 w-4 text-slate-600 dark:text-slate-300" />
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[9px] font-black text-white ring-2 ring-white dark:ring-slate-950 animate-pulse">
+              2
+            </span>
+          </Link>
 
           {/* User Profile / Auth Toggle */}
           {user ? (
