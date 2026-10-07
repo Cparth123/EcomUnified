@@ -40,19 +40,23 @@ export async function POST(req: NextRequest) {
     const dbStatus = await connectToDatabase();
 
     if (dbStatus.isConnected) {
+      const updateData: any = {
+        amazon: body.amazon,
+        flipkart: body.flipkart,
+        aiProvider: body.aiProvider || 'heuristic',
+        anthropicApiKey: body.anthropicApiKey,
+        openaiApiKey: body.openaiApiKey,
+        isLiveDataActive: IS_LIVE_DATA,
+        lastTestedAt: new Date(),
+      };
+
+      if (body.telegram) {
+        updateData.telegram = body.telegram;
+      }
+
       const updated = await SellerCredential.findOneAndUpdate(
         { sellerId: 'default_seller' },
-        { 
-          $set: {
-            amazon: body.amazon,
-            flipkart: body.flipkart,
-            aiProvider: body.aiProvider || 'heuristic',
-            anthropicApiKey: body.anthropicApiKey,
-            openaiApiKey: body.openaiApiKey,
-            isLiveDataActive: IS_LIVE_DATA,
-            lastTestedAt: new Date(),
-          }
-        },
+        { $set: updateData },
         { upsert: true, new: true }
       );
 

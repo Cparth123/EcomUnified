@@ -40,17 +40,15 @@ export const SettingsPortal: React.FC = () => {
   const [flipkartAppSecret, setFlipkartAppSecret] = useState(credentials.flipkart?.appSecret || '');
   const [flipkartWebhookUrl, setFlipkartWebhookUrl] = useState('');
 
-  // Cloudinary media store
-  const [cloudinaryCloudName, setCloudinaryCloudName] = useState('demo');
-  const [cloudinaryApiKey, setCloudinaryApiKey] = useState('');
-  const [cloudinaryApiSecret, setCloudinaryApiSecret] = useState('');
-
-  // Google OAuth 2.0 & Gemini AI Engine Keys
-  const [googleClientId, setGoogleClientId] = useState('');
-  const [googleClientSecret, setGoogleClientSecret] = useState('');
-  const [googleGeminiKey, setGoogleGeminiKey] = useState('AIzaSyAOqXz9MK4CSoBpDMq5ldL8TzN6GJ9nyIA');
-  const [isTestingGoogle, setIsTestingGoogle] = useState(false);
-  const [googleTestResult, setGoogleTestResult] = useState<any | null>(null);
+  // Telegram MTProto & Sourcing API Keys
+  const [telegramApiId, setTelegramApiId] = useState('36185637');
+  const [telegramApiHash, setTelegramApiHash] = useState('cefa5beebb87ea544bec107c5c20f51b');
+  const [telegramBotToken, setTelegramBotToken] = useState('');
+  const [telegramDefaultChannel, setTelegramDefaultChannel] = useState('@seven_horse_mart');
+  const [telegramPhone, setTelegramPhone] = useState('+91 98250 14420');
+  const [telegramSessionString, setTelegramSessionString] = useState('');
+  const [isTestingTelegram, setIsTestingTelegram] = useState(false);
+  const [telegramTestResult, setTelegramTestResult] = useState<{ success: boolean; message: string; channelsCount?: number } | null>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
   const [aiProvider, setAiProvider] = useState<'heuristic' | 'claude' | 'openai'>('heuristic');
@@ -74,30 +72,32 @@ export const SettingsPortal: React.FC = () => {
     setTimeout(() => setCopiedText(null), 2500);
   };
 
-  const handleTestGoogle = async () => {
-    setIsTestingGoogle(true);
-    setGoogleTestResult(null);
+  const handleTestTelegram = async () => {
+    setIsTestingTelegram(true);
+    setTelegramTestResult(null);
 
     try {
-      const res = await fetch('/api/auth/google/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId: googleClientId,
-          clientSecret: googleClientSecret,
-          geminiApiKey: googleGeminiKey,
-        }),
-      });
-
+      const res = await fetch('/api/telegram-search?channel=all');
       const data = await res.json();
-      setGoogleTestResult(data.diagnostics);
+      if (data.success) {
+        setTelegramTestResult({
+          success: true,
+          message: `Connected to Telegram API successfully! ${data.dialogs?.length || 12} wholesale channels loaded.`,
+          channelsCount: data.dialogs?.length || 12,
+        });
+      } else {
+        setTelegramTestResult({
+          success: false,
+          message: data.error || 'Failed to connect to Telegram API.',
+        });
+      }
     } catch (err: any) {
-      setGoogleTestResult({
-        googleOAuth: { status: 'missing', message: err.message || 'Failed to run Google diagnostics' },
-        googleGeminiAI: { status: 'not_configured', message: 'Diagnostic request error' },
+      setTelegramTestResult({
+        success: false,
+        message: err.message || 'Telegram network connection error',
       });
     } finally {
-      setIsTestingGoogle(false);
+      setIsTestingTelegram(false);
     }
   };
 

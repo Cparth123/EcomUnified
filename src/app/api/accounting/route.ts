@@ -6,7 +6,8 @@ import ReturnProduct from '@/models/ReturnProduct';
 import { 
   getAccountingData, 
   computeMetrics, 
-  syncToExcelFile 
+  syncToExcelFile,
+  deleteAccountingRecords 
 } from '@/lib/accountingService';
 import { getAuthUser } from '@/lib/auth';
 import mongoose from 'mongoose';
@@ -283,7 +284,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE: Remove record(s) from MongoDB scoped by userId
+// DELETE: Remove record(s) from MongoDB and Excel scoped by userId
 export async function DELETE(request: NextRequest) {
   try {
     const user = getAuthUser(request);
@@ -296,13 +297,12 @@ export async function DELETE(request: NextRequest) {
 
     if (!type) {
       return NextResponse.json(
-        { success: false, error: 'type parameter is required' },
+        { success: false, error: 'type parameter is required (e.g. expenses, products, returns)' },
         { status: 400 }
       );
     }
 
-    const { isConnected } = await connectToDatabase();
-    const idsToDelete = idsParam ? idsParam.split(',').filter(Boolean) : id ? [id] : [];
+    const idsToDelete = idsParam ? idsParam.split(',').map((i) => i.trim()).filter(Boolean) : id ? [id.trim()] : [];
 
     if (idsToDelete.length === 0) {
       return NextResponse.json(
@@ -311,31 +311,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (isConnected) {
-      const objectIds = idsToDelete.filter((i) => mongoose.Types.ObjectId.isValid(i));
-      const fallbackIds = idsToDelete.filter((i) => !mongoose.Types.ObjectId.isValid(i));
-
-      if (type === 'expense') {
-        if (objectIds.length > 0) await Expense.deleteMany({ _id: { $in: objectIds } });
-        if (fallbackIds.length > 0) await Expense.deleteMany({ description: { $in: fallbackIds } });
-      } else if (type === 'productCost') {
-        if (objectIds.length > 0) await ProductCost.deleteMany({ _id: { $in: objectIds } });
-        if (fallbackIds.length > 0) await ProductCost.deleteMany({ sku: { $in: fallbackIds } });
-      } else if (type === 'returnProduct') {
-        if (objectIds.length > 0) await ReturnProduct.deleteMany({ _id: { $in: objectIds } });
-        if (fallbackIds.length > 0) await ReturnProduct.deleteMany({ orderId: { $in: fallbackIds } });
-      }
-    }
-
-    const { data } = await getAccountingData(userId);
-    syncToExcelFile(data);
-    const metrics = computeMetrics(data);
+    const result = await deleteAccountingRecords(type, idsToDelete, userId);
 
     return NextResponse.json({
       success: true,
-      message: `${idsToDelete.length} record(s) deleted dynamically from MongoDB`,
-      data,
-      metrics,
+      message: `${result.deletedCount} record(s) deleted successfully`,
+      data: result.data,
+      metrics: result.metrics,
     });
   } catch (error: any) {
     console.error('Error in DELETE /api/accounting:', error);

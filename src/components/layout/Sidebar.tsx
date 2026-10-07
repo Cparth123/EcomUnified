@@ -69,14 +69,6 @@ const navItems: NavItem[] = [
     channel: 'telegram',
   },
   {
-    name: 'Amazon SP-API',
-    href: '/integrations/amazon',
-    icon: KeyRound,
-    badge: 'Connect',
-    badgeColor: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-[#FF9900]/20 dark:text-[#FF9900] dark:border-[#FF9900]/30',
-    channel: 'amazon',
-  },
-  {
     name: 'Automation Rules',
     href: '/settings/automation',
     icon: ShieldCheck,

@@ -21,6 +21,16 @@ export interface ISellerCredential extends Document {
     lastTestedAt?: Date;
     complianceStatus?: 'compliant' | 'warning' | 'non_compliant';
   };
+  telegram?: {
+    apiId: string;
+    apiHash: string;
+    botToken?: string;
+    defaultChannel?: string;
+    sessionString?: string;
+    phone?: string;
+    isConnected: boolean;
+    lastSyncAt?: Date;
+  };
   aiProvider: 'heuristic' | 'claude' | 'openai';
   anthropicApiKey?: string;
   openaiApiKey?: string;
@@ -50,6 +60,16 @@ const SellerCredentialSchema: Schema = new Schema(
       isConnected: { type: Boolean, default: false },
       lastTestedAt: { type: Date },
       complianceStatus: { type: String, enum: ['compliant', 'warning', 'non_compliant'], default: 'compliant' },
+    },
+    telegram: {
+      apiId: { type: String, default: '36185637' },
+      apiHash: { type: String, default: 'cefa5beebb87ea544bec107c5c20f51b' },
+      botToken: { type: String, default: '' },
+      defaultChannel: { type: String, default: '@seven_horse_mart' },
+      sessionString: { type: String, default: '' },
+      phone: { type: String, default: '+91 98250 14420' },
+      isConnected: { type: Boolean, default: true },
+      lastSyncAt: { type: Date },
     },
     aiProvider: { type: String, enum: ['heuristic', 'claude', 'openai'], default: 'heuristic' },
     anthropicApiKey: { type: String },

@@ -58,3 +58,9 @@ export function getAuthUser(req: NextRequest): AuthUserPayload | null {
 
   return null;
 }
+
+export function getUserIdFromRequest(req: NextRequest): string | null {
+  const user = getAuthUser(req);
+  return user?.userId || null;
+}
+

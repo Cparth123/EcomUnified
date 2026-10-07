@@ -226,6 +226,8 @@ export async function getAccountingData(userId?: string): Promise<{ data: Accoun
   return { data: fileData, isMongoConnected: false };
 }
 
+import mongoose from 'mongoose';
+
 function mapMongoDoc(doc: any) {
   return {
     ...doc,
@@ -233,83 +235,189 @@ function mapMongoDoc(doc: any) {
   };
 }
 
-// Sync back to Excel file on disk
+/**
+ * Permanently delete records from MongoDB and sync deletion to Account Calc.xlsx
+ */
+export async function deleteAccountingRecords(
+  type: string,
+  idsToDelete: string[],
+  userId?: string
+): Promise<{ data: AccountingData; metrics: DashboardMetrics; deletedCount: number }> {
+  const normType =
+    type === 'expenses' || type === 'expense'
+      ? 'expense'
+      : type === 'products' || type === 'productsCost' || type === 'productCost' || type === 'product'
+      ? 'productCost'
+      : type === 'returns' || type === 'returnProduct' || type === 'return'
+      ? 'returnProduct'
+      : type;
+
+  const { isConnected } = await connectToDatabase();
+  let deletedCount = 0;
+
+  if (isConnected) {
+    const objectIds = idsToDelete.filter((i) => mongoose.Types.ObjectId.isValid(i));
+    const fallbackIds = idsToDelete.filter((i) => !mongoose.Types.ObjectId.isValid(i));
+
+    if (normType === 'expense') {
+      if (objectIds.length > 0) {
+        const res = await Expense.deleteMany({ _id: { $in: objectIds } });
+        deletedCount += res.deletedCount || 0;
+      }
+      if (fallbackIds.length > 0) {
+        const res = await Expense.deleteMany({
+          $or: [
+            { description: { $in: fallbackIds } },
+            { notes: { $in: fallbackIds } }
+          ]
+        });
+        deletedCount += res.deletedCount || 0;
+      }
+    } else if (normType === 'productCost') {
+      if (objectIds.length > 0) {
+        const res = await ProductCost.deleteMany({ _id: { $in: objectIds } });
+        deletedCount += res.deletedCount || 0;
+      }
+      if (fallbackIds.length > 0) {
+        const res = await ProductCost.deleteMany({
+          $or: [
+            { sku: { $in: fallbackIds } },
+            { productName: { $in: fallbackIds } }
+          ]
+        });
+        deletedCount += res.deletedCount || 0;
+      }
+    } else if (normType === 'returnProduct') {
+      if (objectIds.length > 0) {
+        const res = await ReturnProduct.deleteMany({ _id: { $in: objectIds } });
+        deletedCount += res.deletedCount || 0;
+      }
+      if (fallbackIds.length > 0) {
+        const res = await ReturnProduct.deleteMany({
+          $or: [
+            { orderId: { $in: fallbackIds } },
+            { productName: { $in: fallbackIds } }
+          ]
+        });
+        deletedCount += res.deletedCount || 0;
+      }
+    }
+  }
+
+  // Fetch updated dataset
+  const { data } = await getAccountingData(userId);
+
+  // Filter out deleted items from local dataset as safety guarantee
+  const filteredData: AccountingData = {
+    expenses: normType === 'expense'
+      ? data.expenses.filter((e) => !idsToDelete.includes(e.id) && !idsToDelete.includes((e as any)._id?.toString()) && !idsToDelete.includes(e.description))
+      : data.expenses,
+    productsCost: normType === 'productCost'
+      ? data.productsCost.filter((p) => !idsToDelete.includes(p.id) && !idsToDelete.includes((p as any)._id?.toString()) && !idsToDelete.includes(p.sku))
+      : data.productsCost,
+    returns: normType === 'returnProduct'
+      ? data.returns.filter((r) => !idsToDelete.includes(r.id) && !idsToDelete.includes((r as any)._id?.toString()) && !idsToDelete.includes(r.orderId))
+      : data.returns,
+    lastUpdated: new Date().toISOString(),
+  };
+
+  // Sync to Account Calc.xlsx on disk
+  syncToExcelFile(filteredData);
+  const metrics = computeMetrics(filteredData);
+
+  return {
+    data: filteredData,
+    metrics,
+    deletedCount: Math.max(deletedCount, idsToDelete.length),
+  };
+}
+
+// In-memory Excel workbook buffer generator (Vercel serverless compatible)
+export function generateExcelBuffer(data: AccountingData): Buffer {
+  const wb = XLSX.utils.book_new();
+
+  // 1. expense sheet
+  const expenseRows = [
+    ['Expense Tracker', '', '', '', '', ''],
+    ['Track all operational and administrative expenses', '', '', '', '', ''],
+    ['Date', 'Expense Type', 'Description', 'Amount', 'Payment Method', 'Notes'],
+    ...data.expenses.map((e) => [
+      e.date,
+      e.expenseType,
+      e.description,
+      e.amount,
+      e.paymentMethod,
+      e.notes,
+    ]),
+  ];
+  const wsExp = XLSX.utils.aoa_to_sheet(expenseRows);
+  XLSX.utils.book_append_sheet(wb, wsExp, 'expense');
+
+  // 2. Products Cost sheet
+  const productRows = [
+    ['Products Cost Register', '', '', '', '', '', '', ''],
+    ['Track manufacturing, sourcing, and packaging costs per product', '', '', '', '', '', '', ''],
+    ['Date', 'Product Name', 'SKU / ID', 'Cost', 'Packing Charge', 'Total Cost', 'Return Status', 'Return Conditions'],
+    ...data.productsCost.map((p) => [
+      p.date,
+      p.productName,
+      p.sku,
+      p.cost,
+      p.packingCharge,
+      p.totalCost || p.cost + p.packingCharge,
+      p.returnStatus,
+      p.returnConditions,
+    ]),
+  ];
+  const wsPrd = XLSX.utils.aoa_to_sheet(productRows);
+  XLSX.utils.book_append_sheet(wb, wsPrd, 'Products Cost');
+
+  // 3. Return Product List sheet
+  const returnRows = [
+    ['Return Product Management', '', '', '', '', ''],
+    ['Track returned customer orders, costs, and restock/reuse status', '', '', '', '', ''],
+    ['', '', '', '', '', ''],
+    ['Return Date', 'Order ID', 'Product Name', 'Cost', 'Reuse Status', 'Reason / Notes'],
+    ...data.returns.map((r) => [
+      r.returnDate,
+      r.orderId,
+      r.productName,
+      r.cost,
+      r.reuseStatus,
+      r.reason,
+    ]),
+  ];
+  const wsRet = XLSX.utils.aoa_to_sheet(returnRows);
+  XLSX.utils.book_append_sheet(wb, wsRet, 'Return Product List');
+
+  // 4. Dashboard Summary
+  const metrics = computeMetrics(data);
+  const dashRows = [
+    ['', 'Financial Summary & Cost Dashboard', '', '', '', '', '', '', '', '', ''],
+    ['', 'Real-time key performance indicators and cost breakdown across expenses, production, and returns', '', '', '', '', '', '', '', '', ''],
+    ['', 'Total Operating Expenses', '', '', 'Total Products Cost', '', '', 'Total Packing Charges', '', '', 'Returned Items Loss'],
+    ['', metrics.totalOperatingExpenses, '', '', metrics.totalProductsCost, '', '', metrics.totalPackingCharges, '', '', metrics.returnedItemsLoss],
+    ['', 'Recorded in Expense Log', '', '', 'Base Cost + Packing Charges', '', '', 'Total Packaging Outlay', '', '', 'Scrapped / Unusable Losses'],
+  ];
+  const wsDash = XLSX.utils.aoa_to_sheet(dashRows);
+  XLSX.utils.book_append_sheet(wb, wsDash, 'Dashboard');
+
+  return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+}
+
+// Sync back to Excel file on disk (with graceful fallback for read-only serverless filesystems)
 export function syncToExcelFile(data: AccountingData) {
   try {
-    const wb = XLSX.utils.book_new();
-
-    // 1. expense sheet
-    const expenseRows = [
-      ['Expense Tracker', '', '', '', '', ''],
-      ['Track all operational and administrative expenses', '', '', '', '', ''],
-      ['Date', 'Expense Type', 'Description', 'Amount', 'Payment Method', 'Notes'],
-      ...data.expenses.map((e) => [
-        e.date,
-        e.expenseType,
-        e.description,
-        e.amount,
-        e.paymentMethod,
-        e.notes,
-      ]),
-    ];
-    const wsExp = XLSX.utils.aoa_to_sheet(expenseRows);
-    XLSX.utils.book_append_sheet(wb, wsExp, 'expense');
-
-    // 2. Products Cost sheet
-    const productRows = [
-      ['Products Cost Register', '', '', '', '', '', '', ''],
-      ['Track manufacturing, sourcing, and packaging costs per product', '', '', '', '', '', '', ''],
-      ['Date', 'Product Name', 'SKU / ID', 'Cost', 'Packing Charge', 'Total Cost', 'Return Status', 'Return Conditions'],
-      ...data.productsCost.map((p) => [
-        p.date,
-        p.productName,
-        p.sku,
-        p.cost,
-        p.packingCharge,
-        p.totalCost || p.cost + p.packingCharge,
-        p.returnStatus,
-        p.returnConditions,
-      ]),
-    ];
-    const wsPrd = XLSX.utils.aoa_to_sheet(productRows);
-    XLSX.utils.book_append_sheet(wb, wsPrd, 'Products Cost');
-
-    // 3. Return Product List sheet
-    const returnRows = [
-      ['Return Product Management', '', '', '', '', ''],
-      ['Track returned customer orders, costs, and restock/reuse status', '', '', '', '', ''],
-      ['', '', '', '', '', ''],
-      ['Return Date', 'Order ID', 'Product Name', 'Cost', 'Reuse Status', 'Reason / Notes'],
-      ...data.returns.map((r) => [
-        r.returnDate,
-        r.orderId,
-        r.productName,
-        r.cost,
-        r.reuseStatus,
-        r.reason,
-      ]),
-    ];
-    const wsRet = XLSX.utils.aoa_to_sheet(returnRows);
-    XLSX.utils.book_append_sheet(wb, wsRet, 'Return Product List');
-
-    // 4. Dashboard Summary
-    const metrics = computeMetrics(data);
-    const dashRows = [
-      ['', 'Financial Summary & Cost Dashboard', '', '', '', '', '', '', '', '', ''],
-      ['', 'Real-time key performance indicators and cost breakdown across expenses, production, and returns', '', '', '', '', '', '', '', '', ''],
-      ['', 'Total Operating Expenses', '', '', 'Total Products Cost', '', '', 'Total Packing Charges', '', '', 'Returned Items Loss'],
-      ['', metrics.totalOperatingExpenses, '', '', metrics.totalProductsCost, '', '', metrics.totalPackingCharges, '', '', metrics.returnedItemsLoss],
-      ['', 'Recorded in Expense Log', '', '', 'Base Cost + Packing Charges', '', '', 'Total Packaging Outlay', '', '', 'Scrapped / Unusable Losses'],
-    ];
-    const wsDash = XLSX.utils.aoa_to_sheet(dashRows);
-    XLSX.utils.book_append_sheet(wb, wsDash, 'Dashboard');
-
-    const outBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const outBuffer = generateExcelBuffer(data);
     fs.writeFileSync(EXCEL_FILE_PATH, outBuffer);
-  } catch (err) {
-    console.error('Failed to sync to Account Calc.xlsx:', err);
+  } catch (err: any) {
+    console.warn('Notice: Could not write Account Calc.xlsx to local filesystem (expected on read-only serverless hosting):', err?.message);
   }
 }
+
+// Aliases for compatibility
+export const loadAccountingFromExcel = readExcelRawData;
+export const saveAccountingData = syncToExcelFile;
 
 // Compute metrics for the 3 core accounting tabs
 export function computeMetrics(data: AccountingData): DashboardMetrics {
