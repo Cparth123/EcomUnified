@@ -15,7 +15,10 @@ import {
   XCircle,
   Sparkles,
   ExternalLink,
-  UploadCloud
+  Send,
+  Radio,
+  Copy,
+  Hash
 } from 'lucide-react';
 import globalStore from '@/lib/store';
 import { PlatformBadge } from '@/components/ui/Badge';
@@ -116,6 +119,14 @@ export const SettingsPortal: React.FC = () => {
             setFlipkartAppId(data.credentials.flipkart.appId || '');
             setFlipkartWebhookUrl(data.credentials.flipkart.webhookUrl || '');
           }
+          if (data.credentials.telegram) {
+            setTelegramApiId(data.credentials.telegram.apiId || '36185637');
+            setTelegramApiHash(data.credentials.telegram.apiHash || 'cefa5beebb87ea544bec107c5c20f51b');
+            setTelegramBotToken(data.credentials.telegram.botToken || '');
+            setTelegramDefaultChannel(data.credentials.telegram.defaultChannel || '@seven_horse_mart');
+            setTelegramPhone(data.credentials.telegram.phone || '+91 98250 14420');
+            setTelegramSessionString(data.credentials.telegram.sessionString || '');
+          }
         }
       })
       .catch(() => {});
@@ -200,6 +211,16 @@ export const SettingsPortal: React.FC = () => {
             webhookUrl: flipkartWebhookUrl,
             isConnected: isFkConfigured,
           },
+          telegram: {
+            apiId: telegramApiId.trim(),
+            apiHash: telegramApiHash.trim(),
+            botToken: telegramBotToken.trim(),
+            defaultChannel: telegramDefaultChannel.trim(),
+            phone: telegramPhone.trim(),
+            sessionString: telegramSessionString.trim(),
+            isConnected: Boolean(telegramApiId.trim() && telegramApiHash.trim()),
+            lastSyncAt: new Date(),
+          },
           aiProvider,
           anthropicApiKey: anthropicKey,
           openaiApiKey: openaiKey,
@@ -210,8 +231,8 @@ export const SettingsPortal: React.FC = () => {
     runPolicyAudit();
     setIsSaving(false);
     setNotification(
-      isAmzConfigured || isFkConfigured 
-        ? 'Official credentials updated successfully and status marked active!'
+      isAmzConfigured || isFkConfigured || Boolean(telegramApiId && telegramApiHash)
+        ? 'Official credentials & Telegram MTProto keys saved to MongoDB successfully!'
         : 'Settings saved. Provide official keys to connect live marketplace data.'
     );
     setTimeout(() => setNotification(null), 4500);
@@ -472,209 +493,192 @@ export const SettingsPortal: React.FC = () => {
             </div>
           </div>
 
-          {/* GOOGLE CLOUD OAUTH & GEMINI AI INTEGRATION CARD */}
+          {/* TELEGRAM MTPROTO API & SOURCING CHANNELS INTEGRATION CARD */}
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-5 sm:p-6 space-y-4 shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 flex-wrap gap-2">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm">
-                  <svg className="h-5 w-5" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                  </svg>
+                <div className="h-10 w-10 rounded-xl bg-sky-500 text-white flex items-center justify-center shadow-md shadow-sky-500/20">
+                  <Send className="h-5 w-5 fill-current" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">Google Cloud & Gemini AI Integrations</h3>
-                  <p className="text-xs text-slate-500">Google OAuth 2.0 Seller Sign-In & Gemini 1.5/2.0 AI Product Intelligence</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">Telegram Wholesale Channels & MTProto API Keys</h3>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-500/30">
+                      MongoDB Synced
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">Connect MTProto credentials & channel tags for real-time live wholesale sourcing catalog</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>MTProto Active</span>
+                </span>
                 <button
                   type="button"
-                  onClick={handleTestGoogle}
-                  disabled={isTestingGoogle}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 hover:bg-blue-100 dark:hover:bg-blue-500/25 text-blue-700 dark:text-blue-400 text-xs font-bold border border-blue-200 dark:border-blue-500/30 transition-colors shadow-sm"
+                  onClick={handleTestTelegram}
+                  disabled={isTestingTelegram}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-500/15 hover:bg-sky-100 dark:hover:bg-sky-500/25 text-sky-700 dark:text-sky-400 text-xs font-bold border border-sky-200 dark:border-sky-500/30 transition-colors shadow-sm"
                 >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isTestingGoogle ? 'animate-spin' : ''}`} />
-                  <span>{isTestingGoogle ? 'Testing Keys...' : 'Test Google Keys'}</span>
+                  <RefreshCw className={`h-3.5 w-3.5 ${isTestingTelegram ? 'animate-spin' : ''}`} />
+                  <span>{isTestingTelegram ? 'Connecting...' : 'Test Telegram Sourcing'}</span>
                 </button>
               </div>
             </div>
 
             {/* Test Diagnostic Result Banner */}
-            {googleTestResult && (
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-                <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
-                  <span>Google Connection Diagnostic Results</span>
-                  <span className="text-[10px] text-slate-500">Live Test</span>
+            {telegramTestResult && (
+              <div className={`p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between border ${
+                telegramTestResult.success
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'
+              }`}>
+                <div className="flex items-center gap-2">
+                  {telegramTestResult.success ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                  )}
+                  <span>{telegramTestResult.message}</span>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                  <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
-                    <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full ${googleTestResult.googleOAuth?.status === 'configured' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                      <span>Google OAuth 2.0 Sign-In</span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400">{googleTestResult.googleOAuth?.message}</p>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
-                    <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full ${googleTestResult.googleGeminiAI?.status === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                      <span>Google Gemini AI Engine</span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400">{googleTestResult.googleGeminiAI?.message}</p>
-                  </div>
-                </div>
+                {telegramTestResult.channelsCount && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                    {telegramTestResult.channelsCount} Channels Live
+                  </span>
+                )}
               </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 dark:text-slate-300">Google OAuth Client ID</label>
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Telegram API ID (App ID)</label>
+                  <span className="text-[10px] text-slate-500">my.telegram.org</span>
+                </div>
                 <input
                   type="text"
-                  placeholder="e.g. 123456789-xxxx.apps.googleusercontent.com"
-                  value={googleClientId}
-                  onChange={(e) => setGoogleClientId(e.target.value)}
-                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-blue-500 focus:outline-none transition-colors"
+                  placeholder="e.g. 36185637"
+                  value={telegramApiId}
+                  onChange={(e) => setTelegramApiId(e.target.value)}
+                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-sky-500 focus:outline-none transition-colors"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 dark:text-slate-300">Google OAuth Client Secret</label>
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Telegram API Hash</label>
+                  <span className="text-[10px] text-slate-500">32-char hex</span>
+                </div>
                 <input
                   type="password"
-                  placeholder="e.g. GOCSPX-xxxxxxxxxxxx"
-                  value={googleClientSecret}
-                  onChange={(e) => setGoogleClientSecret(e.target.value)}
-                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-blue-500 focus:outline-none transition-colors"
+                  placeholder="e.g. cefa5beebb87ea544bec107c5c20f51b"
+                  value={telegramApiHash}
+                  onChange={(e) => setTelegramApiHash(e.target.value)}
+                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-sky-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Primary Channel Tag / Default Username</label>
+                  <span className="text-[10px] text-sky-600 dark:text-sky-400 font-semibold">Live Feed Source</span>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">@</span>
+                  <input
+                    type="text"
+                    placeholder="seven_horse_mart or rb_import"
+                    value={telegramDefaultChannel.replace(/^@/, '')}
+                    onChange={(e) => setTelegramDefaultChannel(e.target.value.startsWith('@') ? e.target.value : `@${e.target.value}`)}
+                    className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-7 pr-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-sky-500 focus:outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-slate-300">Registered Phone Number</label>
+                <input
+                  type="text"
+                  placeholder="e.g. +91 98250 14420"
+                  value={telegramPhone}
+                  onChange={(e) => setTelegramPhone(e.target.value)}
+                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-sky-500 focus:outline-none transition-colors"
                 />
               </div>
 
               <div className="space-y-1.5 md:col-span-2">
                 <div className="flex items-center justify-between">
-                  <label className="font-bold text-slate-700 dark:text-slate-300">Google Gemini AI API Key (Gemini 1.5 / 2.0)</label>
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Telegram Bot Token (Optional / Automated Broadcasts)</label>
                   <a
-                    href="https://aistudio.google.com/app/apikey"
+                    href="https://t.me/BotFather"
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                    className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline inline-flex items-center gap-1"
                   >
-                    <span>Get Gemini API Key (Free)</span>
+                    <span>Get Bot Token via @BotFather</span>
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
                 <input
                   type="password"
-                  placeholder="AIzaSyAOqXz9..."
-                  value={googleGeminiKey}
-                  onChange={(e) => setGoogleGeminiKey(e.target.value)}
-                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-blue-500 focus:outline-none transition-colors"
-                />
-              </div>
-            </div>
-
-            {/* Google Cloud Console Setup Guidance & 1-Click Copy */}
-            <div className="p-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 text-xs space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-blue-950 dark:text-blue-200">Google Cloud Console Configuration URLs</span>
-                <a
-                  href="https://console.cloud.google.com/apis/credentials"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
-                >
-                  <span>Open Google Cloud Credentials</span>
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/60 space-y-1">
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Authorized JavaScript Origins</div>
-                  <div className="flex items-center justify-between gap-2">
-                    <code className="text-blue-700 dark:text-blue-300 font-mono text-[11px] truncate">http://localhost:3000</code>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy('http://localhost:3000', 'origin')}
-                      className="text-[10px] font-bold px-2 py-1 rounded bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 hover:opacity-80 transition-opacity shrink-0"
-                    >
-                      {copiedText === 'origin' ? 'Copied ✓' : 'Copy'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/60 space-y-1">
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Authorized Redirect URI</div>
-                  <div className="flex items-center justify-between gap-2">
-                    <code className="text-blue-700 dark:text-blue-300 font-mono text-[11px] truncate">http://localhost:3000/api/auth/callback/google</code>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy('http://localhost:3000/api/auth/callback/google', 'redirect')}
-                      className="text-[10px] font-bold px-2 py-1 rounded bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 hover:opacity-80 transition-opacity shrink-0"
-                    >
-                      {copiedText === 'redirect' ? 'Copied ✓' : 'Copy'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Cloudinary Media Store Section */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold">
-                  <UploadCloud className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">Cloudinary Media Store</h3>
-                  <p className="text-xs text-slate-500">Image hosting and CDN optimization for product catalog uploads</p>
-                </div>
-              </div>
-
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Cloudinary Ready</span>
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 dark:text-slate-300">Cloud Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. my-ecom-cloud"
-                  value={cloudinaryCloudName}
-                  onChange={(e) => setCloudinaryCloudName(e.target.value)}
+                  placeholder="e.g. 123456789:AAH_xxx-yyy-zzz"
+                  value={telegramBotToken}
+                  onChange={(e) => setTelegramBotToken(e.target.value)}
                   className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-sky-500 focus:outline-none transition-colors"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 dark:text-slate-300">API Key</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 123456789012345"
-                  value={cloudinaryApiKey}
-                  onChange={(e) => setCloudinaryApiKey(e.target.value)}
-                  className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-sky-500 focus:outline-none transition-colors"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700 dark:text-slate-300">API Secret</label>
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="font-bold text-slate-700 dark:text-slate-300">Encrypted MTProto Session Key / String</label>
                 <input
                   type="password"
-                  placeholder="e.g. abcd1234efgh5678"
-                  value={cloudinaryApiSecret}
-                  onChange={(e) => setCloudinaryApiSecret(e.target.value)}
+                  placeholder="1BVtsOHQBu7w6sL... (Saved in MongoDB session collection)"
+                  value={telegramSessionString}
+                  onChange={(e) => setTelegramSessionString(e.target.value)}
                   className="w-full h-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-3.5 text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:border-sky-500 focus:outline-none transition-colors"
                 />
+              </div>
+            </div>
+
+            {/* Quick Sourcing Channel Tags Helper */}
+            <div className="p-4 rounded-xl bg-sky-50/60 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-900/40 text-xs space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Hash className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                  <span className="font-bold text-sky-950 dark:text-sky-200">Verified Indian Wholesale Sourcing Channel Tags</span>
+                </div>
+                <span className="text-[10px] text-sky-700 dark:text-sky-300 font-medium">Click tag to set as default channel</span>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { tag: '@seven_horse_mart', name: '7 HORSE ONLINE MART (Surat)', city: 'Surat' },
+                  { tag: '@holiday_wholesaler', name: 'HOLIDAY WHOLESALER (Delhi)', city: 'Delhi' },
+                  { tag: '@rb_import', name: 'Rb Import Wholesale', city: 'Surat' },
+                  { tag: '@suratonlinesellers', name: 'SURAT ONLINE SELLERS', city: 'Surat' },
+                  { tag: '@delhi_crockery_mart', name: 'DELHI CROCKERY MART', city: 'Sadar Bazar' },
+                  { tag: '@jaipur_textiles_hub', name: 'JAIPUR TEXTILES DIRECT', city: 'Jaipur' },
+                ].map((ch) => (
+                  <button
+                    key={ch.tag}
+                    type="button"
+                    onClick={() => {
+                      setTelegramDefaultChannel(ch.tag);
+                      handleCopy(ch.tag, ch.tag);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                      telegramDefaultChannel === ch.tag
+                        ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
+                        : 'bg-white dark:bg-slate-900 border-sky-200 dark:border-sky-900/60 text-slate-800 dark:text-slate-200 hover:border-sky-400'
+                    }`}
+                  >
+                    <span className="font-bold">{ch.tag}</span>
+                    <span className="text-[10px] opacity-75">({ch.city})</span>
+                    {copiedText === ch.tag && <span className="text-[10px] font-bold text-emerald-400">✓</span>}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
