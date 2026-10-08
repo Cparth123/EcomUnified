@@ -4,6 +4,8 @@ import { TelegramProduct, TelegramGroupDialog } from '@/types/telegram';
 export interface ITelegramSession extends Document {
   userId: string;
   phone?: string;
+  userName?: string;
+  apiId?: string;
   sessionString?: string;
   isConnected: boolean;
   connectedDialogs: TelegramGroupDialog[];
@@ -13,14 +15,16 @@ export interface ITelegramSession extends Document {
   updatedAt: Date;
 }
 
-const TelegramSessionSchema = new Schema<ITelegramSession>(
+const TelegramSessionSchema: Schema = new Schema(
   {
     userId: { type: String, required: true, unique: true, index: true },
     phone: { type: String, default: '' },
+    userName: { type: String, default: '' },
+    apiId: { type: String, default: '' },
     sessionString: { type: String, default: '' },
     isConnected: { type: Boolean, default: false },
-    connectedDialogs: { type: [Schema.Types.Mixed], default: [] },
-    syncedProducts: { type: [Schema.Types.Mixed], default: [] },
+    connectedDialogs: { type: Array, default: [] },
+    syncedProducts: { type: Array, default: [] },
     lastSyncAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

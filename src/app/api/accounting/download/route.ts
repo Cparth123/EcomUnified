@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     // Generate Excel buffer in memory
     const fileBuffer = generateExcelBuffer(data);
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       const filePath = path.join(process.cwd(), 'Account Calc.xlsx');
       if (fs.existsSync(filePath)) {
         const fileBuffer = fs.readFileSync(filePath);
-        return new NextResponse(fileBuffer, {
+        return new NextResponse(new Uint8Array(fileBuffer), {
           status: 200,
           headers: {
             'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

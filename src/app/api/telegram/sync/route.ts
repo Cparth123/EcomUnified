@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchDynamicTelegramData } from '@/lib/telegramClient';
+import {
+  fetchDynamicTelegramData,
+  setTelegramConnectedDialogs,
+  setTelegramSyncedProducts,
+  setTelegramUserAccount,
+} from '@/lib/telegramClient';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -7,6 +12,19 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const userId = getUserIdFromRequest(req) || 'default_seller';
+    const body = await req.json().catch(() => ({}));
+
+    // Allow dynamically setting custom dialogs, products, or user account info
+    if (body.dialogs && Array.isArray(body.dialogs)) {
+      await setTelegramConnectedDialogs(userId, body.dialogs);
+    }
+    if (body.products && Array.isArray(body.products)) {
+      await setTelegramSyncedProducts(userId, body.products);
+    }
+    if (body.userAccount && typeof body.userAccount === 'object') {
+      await setTelegramUserAccount(userId, body.userAccount);
+    }
+
     const { dialogs, products, userAccount } = await fetchDynamicTelegramData(userId);
 
     return NextResponse.json({

@@ -99,7 +99,7 @@ export const TelegramProductSearch: React.FC<TelegramProductSearchProps> = ({
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   // Live Telegram OTP / Session Login Modal state
-  const [phoneInput, setPhoneInput] = useState('+91 98250 14420');
+  const [phoneInput, setPhoneInput] = useState('');
   const [otpCodeInput, setOtpCodeInput] = useState('');
   const [twoFaPasswordInput, setTwoFaPasswordInput] = useState('');
   const [sessionStringInput, setSessionStringInput] = useState('');
@@ -151,6 +151,9 @@ export const TelegramProductSearch: React.FC<TelegramProductSearchProps> = ({
           }
           if (data.userAccount) {
             setUserAccount(data.userAccount);
+            if (data.userAccount.phone) {
+              setPhoneInput((prev) => (prev ? prev : data.userAccount!.phone || ''));
+            }
           }
           if (data.aiAnalysis) {
             setAiAnalysis(data.aiAnalysis);
@@ -195,7 +198,12 @@ export const TelegramProductSearch: React.FC<TelegramProductSearchProps> = ({
       if (syncData.success) {
         setProducts(syncData.products || []);
         if (syncData.dialogs) setDialogs(syncData.dialogs);
-        if (syncData.userAccount) setUserAccount(syncData.userAccount);
+        if (syncData.userAccount) {
+          setUserAccount(syncData.userAccount);
+          if (syncData.userAccount.phone) {
+            setPhoneInput((prev) => (prev ? prev : syncData.userAccount.phone || ''));
+          }
+        }
         showToast(`Dynamically synced ${syncData.products?.length || 0} wholesale products!`, 'success');
       } else {
         await executeSearch(query, imageBase64, selectedChannel, categoryFilter, sortBy);
@@ -437,11 +445,11 @@ export const TelegramProductSearch: React.FC<TelegramProductSearchProps> = ({
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                 <span className="w-2 h-2 rounded-full bg-emerald-400 absolute" />
-                <span>Connected: {userAccount?.name || 'Parth Chauhan'}</span>
+                <span>Connected: {userAccount?.name || userAccount?.phone || 'Telegram Account'}</span>
               </span>
 
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono text-slate-300 bg-slate-800/80 border border-slate-700">
-                <span>API_ID: 36185637</span>
+                <span>API_ID: {telegramConfig?.apiId || userAccount?.apiId || '36185637'}</span>
               </span>
             </div>
 
@@ -1230,11 +1238,11 @@ export const TelegramProductSearch: React.FC<TelegramProductSearchProps> = ({
                 <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                 <div>
                   <div className="font-bold text-emerald-300">Live Telegram Account Active</div>
-                  <div className="text-emerald-400/80 text-[11px]">User: Parth Chauhan • {dialogs.length} Groups Synced</div>
+                  <div className="text-emerald-400/80 text-[11px]">User: {userAccount?.name || userAccount?.phone || 'Connected Seller'} • {dialogs.length} Groups Synced</div>
                 </div>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">
-                API_ID: 36185637
+                API_ID: {telegramConfig?.apiId || userAccount?.apiId || 'Configured'}
               </span>
             </div>
 

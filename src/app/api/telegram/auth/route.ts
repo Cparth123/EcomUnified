@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendTelegramLoginCode, verifyTelegramLoginCode, saveTelegramSession } from '@/lib/telegramClient';
+import {
+  sendTelegramLoginCode,
+  verifyTelegramLoginCode,
+  saveTelegramSession,
+  getTelegramUserAccount,
+  setTelegramUserAccount,
+} from '@/lib/telegramClient';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -8,13 +14,13 @@ export async function POST(req: NextRequest) {
   try {
     const userId = getUserIdFromRequest(req) || 'default_seller';
     const body = await req.json();
-    const { action, phone, code, password, sessionString } = body;
+    const { action, phone, code, password, sessionString, userName, accountData } = body;
 
     // Action 1: Send Telegram OTP code to phone number
     if (action === 'send-code') {
       if (!phone || phone.trim().length < 6) {
         return NextResponse.json(
-          { success: false, error: 'Please provide a valid phone number with country code (e.g. +91 98250 14420)' },
+          { success: false, error: 'Please provide a valid phone number with country code' },
           { status: 400 }
         );
       }
@@ -38,15 +44,40 @@ export async function POST(req: NextRequest) {
 
     // Action 3: Save direct session string
     if (action === 'save-session' && sessionString) {
-      await saveTelegramSession(userId, sessionString.trim(), phone);
+      await saveTelegramSession(userId, sessionString.trim(), phone, userName);
+      const userAccount = await getTelegramUserAccount(userId);
       return NextResponse.json({
         success: true,
         message: 'Telegram session string saved and activated successfully!',
+        userAccount,
+      });
+    }
+
+    // Action 4: Dynamically get user account
+    if (action === 'get-account') {
+      const userAccount = await getTelegramUserAccount(userId);
+      return NextResponse.json({
+        success: true,
+        userAccount,
+      });
+    }
+
+    // Action 5: Dynamically update user account
+    if (action === 'update-account') {
+      const updatedAccount = await setTelegramUserAccount(userId, accountData || { name: userName, phone });
+      return NextResponse.json({
+        success: true,
+        message: 'Telegram user account updated successfully!',
+        userAccount: updatedAccount,
       });
     }
 
     return NextResponse.json(
-      { success: false, error: 'Invalid action specified. Supported actions: send-code, verify-code, save-session' },
+      {
+        success: false,
+        error:
+          'Invalid action specified. Supported actions: send-code, verify-code, save-session, get-account, update-account',
+      },
       { status: 400 }
     );
   } catch (error: any) {
